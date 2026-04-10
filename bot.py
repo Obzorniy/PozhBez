@@ -1,54 +1,49 @@
 import requests
-from bs4 import BeautifulSoup
-import os 
+import time
+import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-my_token = os.getenv("TELEGRAM_BOT_TOKEN")
-my_chat = os.getenv("TELEGRAM_CHAT_ID")
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
-url = "https://news.ycombinator.com/"
+url = f"https://api.telegram.org/bot{TOKEN}"
 
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-}
+last_update_id = None
 
-try:
-    response = requests.get(url, headers=headers)
+print("🚀 Bot started...")
 
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.content, "html.parser")
-        all_news = soup.find_all(class_="titleline")
+while True:
+    try:
+        response = requests.get(f"{url}/getUpdates", params={"timeout": 10})
+        data = response.json()
 
-        message_text = "🔥 ТОП 5 ТЕХНИЧЕСКИХ НОВОСТЕЙ\n"
-        message_text += "=" * 50 + "\n\n"
+        for update in data["result"]:
+            update_id = update["update_id"]
 
-        for i, news in enumerate(all_news[:5], 1):
-            headline = news.get_text().strip()
-            link_tag = news.find("a")
-            link = link_tag.get("href") if link_tag else "No link"
+            if last_update_id is None or update_id > last_update_id:
+                last_update_id = update_id
 
-            message_text += f"{i}. 📰 {headline}\n"
-            message_text += f"   🔗 {link}\n"
-            message_text += "-" * 50 + "\n"
+                if "message" in update:
+                    chat_id = update["message"]["chat"]["id"]
+                    text = update["message"].get("text", "")
 
-        message_text += "\n✅ Новости обновлены!"
+                    print(f"📩 Message: {text}")
 
-        # 🚀 ОТПРАВКА В TELEGRAM
-        tele_url = f"https://api.telegram.org/bot{my_token}/sendMessage"
+                    if text == "/start":
+                        requests.get(f"{url}/sendMessage", params={
+                            "chat_id": chat_id,
+                            "text": "🔥 Бот работает! Напиши что-нибудь"
+                        })
 
-        tg_response = requests.post(tele_url, data={
-            "chat_id": my_chat,
-            "text": message_text
-        })
+                    else:
+                        requests.get(f"{url}/sendMessage", params={
+                            "chat_id": chat_id,
+                            "text": f"Ты написал: {text}"
+                        })
 
-        print("Telegram response:", tg_response.text)
-        print("✅ Telegram Sent!")
-        print(message_text)
+        time.sleep(2)
 
-    else:
-        print("❌ Server Error")
-
-except Exception as e:
-    print(f"ERROR : {e}")
+    except Exception as e:
+        print("ERROR:", e)
+        time.sleep(5)

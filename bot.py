@@ -35,9 +35,15 @@ try:
 
         message_text += "\n✅ Новости обновлены!"
 
+        # 🚀 ОТПРАВКА В TELEGRAM
         tele_url = f"https://api.telegram.org/bot{my_token}/sendMessage"
-        requests.get(tele_url, params={"chat_id": my_chat, "text": message_text})
-        
+
+        tg_response = requests.post(tele_url, data={
+            "chat_id": my_chat,
+            "text": message_text
+        })
+
+        print("Telegram response:", tg_response.text)
         print("✅ Telegram Sent!")
         print(message_text)
 

@@ -1,51 +1,41 @@
 import requests
-import time
+from bs4 import BeautifulSoup
 import os
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-BASE_URL = f"https://api.telegram.org/bot{TOKEN}"
-
-last_update_id = None
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 print("🚀 Bot started...")
 
-while True:
-    try:
-        params = {
-            "timeout": 10
-        }
+url = "https://news.ycombinator.com/"
 
-        if last_update_id is not None:
-            params["offset"] = last_update_id + 1
+headers = {
+    "User-Agent": "Mozilla/5.0"
+}
 
-        response = requests.get(f"{BASE_URL}/getUpdates", params=params)
-        data = response.json()
+try:
+    response = requests.get(url, headers=headers)
 
-        if not data.get("ok"):
-            print("❌ Telegram error:", data)
-            time.sleep(2)
-            continue
+    soup = BeautifulSoup(response.text, "html.parser")
+    news = soup.find_all(class_="titleline")
 
-        updates = data.get("result", [])
+    message = "🔥 ТОП 5 ТЕХНО НОВОСТЕЙ\n\n"
 
-        for update in updates:
-            last_update_id = update["update_id"]
+    for i, item in enumerate(news[:5], 1):
+        title = item.get_text()
+        link = item.find("a")["href"]
 
-            if "message" not in update:
-                continue
+        message += f"{i}. {title}\n{link}\n\n"
 
-            chat_id = update["message"]["chat"]["id"]
-            text = update["message"].get("text", "")
+    # 🔥 ВАЖНО: правильный URL
+    send_url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
-            print("📩 Message:", text)
+    r = requests.post(send_url, data={
+        "chat_id": CHAT_ID,
+        "text": message
+    })
 
-            requests.get(f"{BASE_URL}/sendMessage", params={
-                "chat_id": chat_id,
-                "text": f"Ответ: {text}"
-            })
+    print("📡 Telegram response:", r.text)
 
-        time.sleep(2)
-
-    except Exception as e:
-        print("❌ ERROR:", e)
-        time.sleep(5)
+except Exception as e:
+    print("ERROR:", e)

@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-my_token = os.getenv("8779632285:AAFHX6ykT7RfTIJD6wIZqojKYYDzuu3tv6U")
-my_chat = os.getenv("mypartnerasia")
+my_token = os.getenv("TELEGRAM_BOT_TOKEN")
+my_chat = os.getenv("TELEGRAM_CHAT_ID")
 
 url = "https://news.ycombinator.com/"
 

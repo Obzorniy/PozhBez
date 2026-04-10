@@ -1,4 +1,4 @@
-Enter file contents here
+
 import requests
 from bs4 import BeautifulSoup
 import os 
